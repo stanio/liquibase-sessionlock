@@ -1,2 +1,3 @@
-org.liquibase.lockservice.ext.MySQLLockService
-org.liquibase.lockservice.ext.PGLockService
+com.github.blagerweij.sessionlock.MySQLLockService
+com.github.blagerweij.sessionlock.OracleLockService
+com.github.blagerweij.sessionlock.PGLockService

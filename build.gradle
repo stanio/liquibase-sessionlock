@@ -1,0 +1,165 @@
+plugins {
+    id 'java-library'
+    id 'maven'
+    id 'signing'
+    id 'jacoco'
+    id 'checkstyle'
+    id 'io.codearte.nexus-staging' version '0.22.0'
+    id 'com.softeq.gradle.itest' version '1.0.4'
+    id 'net.researchgate.release' version '2.8.1'
+    id 'org.sonarqube' version '2.8'
+}
+
+group = 'com.github.blagerweij'
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    testImplementation.extendsFrom compileOnly
+    itestImplementation.extendsFrom testImplementation
+    itestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+sourceSets {
+    itest {
+        compileClasspath += test.output
+        runtimeClasspath += test.output
+    }
+}
+
+dependencies {
+    compileOnly(
+            'org.liquibase:liquibase-core:4.3.1',
+    )
+    testImplementation(
+            'org.junit.jupiter:junit-jupiter-api:5.7.0',
+            'org.assertj:assertj-core:3.18.1',
+            'org.mockito:mockito-core:3.7.0',
+    )
+    testRuntimeOnly(
+            'org.junit.jupiter:junit-jupiter-engine:5.7.0',
+    )
+    itestImplementation(
+            platform('org.testcontainers:testcontainers-bom:1.15.2'),
+            'mysql:mysql-connector-java:8.0.20',
+            'org.liquibase:liquibase-core:4.3.1',
+            'org.postgresql:postgresql:42.2.14',
+            'org.mariadb.jdbc:mariadb-java-client:2.7.2',
+            'com.oracle.database.jdbc:ojdbc8:21.1.0.0',
+            'org.testcontainers:junit-jupiter',
+            'org.testcontainers:mysql',
+            'org.testcontainers:postgresql',
+            'org.testcontainers:mariadb',
+            'org.testcontainers:oracle-xe',
+    )
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+test {
+    useJUnitPlatform()
+}
+
+integrationTest {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Liquibase-Package': 'com.github.blagerweij.sessionlock',
+        )
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: sonatypeUsername, password: sonatypePassword)
+            }
+
+            pom.project {
+                name = 'Liquibase SessionLock'
+                description = 'Replaces the default DATABASECHANGELOGLOCK with a RDBMS lock, which is automatically released when the container is stopped unexpectedly'
+                url = 'https://github.com/blagerweij/liquibase-sessionlock'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'stanio'
+                        name = 'Stanimir Stamenkov'
+                        email = 'stanio@yahoo.com'
+                    }
+                    developer {
+                        id = 'blagerweij'
+                        name = 'Barry Lagerweij'
+                        email = 'blagerweij@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/blagerweij/liquibase-sessionlock.git'
+                    developerConnection = 'scm:git:git@github.com:blagerweij/liquibase-sessionlock.git'
+                    url = 'https://github.com/blagerweij/liquibase-sessionlock'
+                }
+            }
+            repositories {
+                maven {
+                    url 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+                    credentials {
+                        username = "${sonatypeUsername}"
+                        password = "${sonatypePassword}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    required = { gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
+}
+
+checkstyle {
+    toolVersion = '8.41'
+    config = project.resources.text.fromUri('https://raw.githubusercontent.com/checkstyle/checkstyle/checkstyle-8.41/src/main/resources/google_checks.xml')
+}
+
+tasks.sonarqube.dependsOn tasks.jacocoTestReport
+jacocoTestReport {
+    reports.xml.enabled true
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+release {
+    tagCommitMessage = 'Release tag [skip ci]'
+    newVersionCommitMessage = 'New version [skip ci]'
+    git {
+        requireBranch = ''
+    }
+}
+
+nexusStaging {
+    stagingProfileId = '58ec39c9c6418'
+}
