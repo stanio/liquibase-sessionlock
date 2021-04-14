@@ -1,3 +1,11 @@
+ℹ️ Thanks to Barry Lagerweij, the official/canonical repo for
+[public releases](https://search.maven.org/artifact/com.github.blagerweij/liquibase-sessionlock)
+and open development is:
+
+-   https://github.com/blagerweij/liquibase-sessionlock
+
+I'm maintaining this one for private purposes, and I'll eventually decommission it.
+
 # Liquibase Extension: Session Lock Support
 
 Provides _session-level_ (vs. _transaction-level_)
